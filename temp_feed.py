@@ -21,20 +21,18 @@ def get_source(entry):
     """Identify news source from URL"""
     url = entry.get("link", "").lower()
     source_map = {
-        "bbc": "BBC",
-        "nytimes": "The New York Times",
-        "aljazeera": "Al Jazeera",
-        "scmp": "South China Morning Post",
-        "hindu": "The Hindu",
-        "asiatimes": "Asia Times",
-        "eurasiareview": "Eurasia Review",
-        "middleeasteye": "Middle East Eye",
-        "middleeastmonitor": "Middle East Monitor",
-        "moscowtimes": "The Moscow Times",
-        "financialexpress": "Financial Express",
-        "tbsnews": "The Business Standard",
         "thedailystar": "The Daily Star",
-        "unb": "United News Bangladesh"
+        "prothomalo": "Prothom Alo (English)",
+        "dailysun": "Daily Sun",
+        "unb": "UNB",
+        "bss": "BSS",
+        "bangladeshpost": "Bangladesh Post",
+        "observer": "Observer",
+        "dhakatribune": "Dhaka Tribune",
+        "bdnews24": "BDNEWS24",
+        "newagebd": "New Age",
+        "tbsnews": "The Business Standard",
+        "financialexpress": "Financial Express",
     }
     for key, name in source_map.items():
         if key in url:
