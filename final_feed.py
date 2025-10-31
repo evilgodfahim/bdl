@@ -28,20 +28,18 @@ WEIGHT_REPUTATION = 0.5
 
 # Source reputation hierarchy (higher = more reputable)
 REPUTATION = {
-    "The New York Times": 1,
-    "BBC": 10,
-    "Al Jazeera": 9,
-    "The Hindu": 8,
-    "South China Morning Post": 6,
-    "Eurasia Review": 7,
-    "Asia Times": 5,
-    "The Moscow Times": 4,
-    "Middle East Eye": 3,
-    "Middle East Monitor": 2,
-    "The Daily Star": 14,
-    "The Business Standard": 12,
-    "Financial Express": 13,
-    "United News Bangladesh": 11,
+    "The Daily Star": 14,              # most reputable English daily
+    "Dhaka Tribune": 13,               # strong editorial quality
+    "The Business Standard": 12,       # modern, analytical reporting
+    "Financial Express": 11,           # older, respected business daily
+    "BDNEWS24": 10,                    # first digital-native platform
+    "New Age": 9,                      # respected editorial independence
+    "Prothom Alo (English)": 8,        # strong parent brand
+    "Daily Sun": 7,                    # mainstream, corporate-leaning
+    "Observer": 6,                     # older, smaller footprint
+    "Bangladesh Post": 5,              # mid-tier, developing credibility
+    "UNB": 4,                          # reliable wire, less analytical
+    "BSS": 3,                          # state-run official news agency
 }
 
 # ===== MODEL =====
