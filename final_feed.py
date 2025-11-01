@@ -18,28 +18,28 @@ FINAL_XML_FILE = "final.xml"
 LAST_SEEN_FILE = "last_seen_final.json"
 
 # Thresholds
-MIN_FEED_COUNT = 3  # Story must appear in at least 3 feeds
-SIMILARITY_THRESHOLD = 0.50  # Title clustering threshold
-TOP_N_ARTICLES = 50  # Only keep top 20 articles
+MIN_FEED_COUNT = 3
+SIMILARITY_THRESHOLD = 0.50
+TOP_N_ARTICLES = 50
 
 # Importance scoring weights
 WEIGHT_FEED_COUNT = 10.0
 WEIGHT_REPUTATION = 0.5
 
-# Source reputation hierarchy (higher = more reputable)
+# Source reputation hierarchy
 REPUTATION = {
-    "The Daily Star": 14,              # most reputable English daily
-    "Dhaka Tribune": 13,               # strong editorial quality
-    "The Business Standard": 12,       # modern, analytical reporting
-    "Financial Express": 11,           # older, respected business daily
-    "BDNEWS24": 10,                    # first digital-native platform
-    "New Age": 9,                      # respected editorial independence
-    "Prothom Alo (English)": 8,        # strong parent brand
-    "Daily Sun": 7,                    # mainstream, corporate-leaning
-    "Observer": 6,                     # older, smaller footprint
-    "Bangladesh Post": 5,              # mid-tier, developing credibility
-    "UNB": 4,                          # reliable wire, less analytical
-    "BSS": 3,                          # state-run official news agency
+    "The Daily Star": 14,
+    "Dhaka Tribune": 13,
+    "The Business Standard": 12,
+    "Financial Express": 11,
+    "BDNEWS24": 10,
+    "New Age": 9,
+    "Prothom Alo (English)": 8,
+    "Daily Sun": 7,
+    "Observer": 6,
+    "Bangladesh Post": 5,
+    "UNB": 4,
+    "BSS": 3,
 }
 
 # ===== MODEL =====
@@ -53,13 +53,12 @@ except Exception as e:
 
 # ===== UTILITY FUNCTIONS =====
 def normalize_title(title):
-    """Normalize title for better clustering"""
     title = re.sub(r'\s+', ' ', title).strip()
     title = re.sub(r'[^\w\s\-\']', '', title)
     return title.lower()
 
 def get_reputation_score(source):
-    return REPUTATION.get(source, 1)  # default reputation = 1 for unknown sources
+    return REPUTATION.get(source, 1)
 
 def parse_xml_date(date_str):
     try:
@@ -146,12 +145,12 @@ def calculate_importance(cluster):
     unique_sources = len(set(a["source"] for a in cluster))
     reputations = [get_reputation_score(a["source"]) for a in cluster]
     avg_reputation = sum(reputations) / len(reputations) if reputations else 0
-    
+
     score = (
         unique_sources * WEIGHT_FEED_COUNT +
         avg_reputation * WEIGHT_REPUTATION
     )
-    
+
     return {
         "score": score,
         "feed_count": unique_sources,
@@ -197,7 +196,8 @@ def curate_final_feed():
             important_clusters.append({
                 "article": best_article,
                 "cluster_size": len(cluster),
-                "importance": importance
+                "importance": importance,
+                "titles": [a["title"] for a in cluster]
             })
 
     print(f"✨ Found {len(important_clusters)} important stories")
@@ -214,7 +214,6 @@ def curate_final_feed():
             final_articles.append(item)
             new_last_seen[article["link"]] = datetime.now(timezone.utc).isoformat()
 
-    # Generate final.xml
     rss = ET.Element("rss", version="2.0")
     channel = ET.SubElement(rss, "channel")
     ET.SubElement(channel, "title").text = "Fahim Final News Feed"
@@ -231,7 +230,17 @@ def curate_final_feed():
         ET.SubElement(xml_item, "pubDate").text = article["pubDateStr"]
         source_text = f"{article['source']} (+{item['cluster_size']-1} other sources)" if item['cluster_size'] > 1 else article["source"]
         ET.SubElement(xml_item, "source").text = source_text
-        desc = f"Importance: {imp['score']:.1f} | Covered by {imp['feed_count']} feeds | Reputation: {imp['avg_reputation']:.1f}"
+
+        matched_titles = [t for t in item["titles"] if t != article["title"]]
+        if matched_titles:
+            matched_text = "\nMatched titles:\n" + "\n".join(f"- {t}" for t in matched_titles)
+        else:
+            matched_text = ""
+
+        desc = (
+            f"Importance: {imp['score']:.1f} | Covered by {imp['feed_count']} feeds | Reputation: {imp['avg_reputation']:.1f}"
+            f"{matched_text}"
+        )
         ET.SubElement(xml_item, "description").text = desc
 
     tree = ET.ElementTree(rss)
