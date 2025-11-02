@@ -19,7 +19,7 @@ LAST_SEEN_FILE = "last_seen_final.json"
 
 # Thresholds
 MIN_FEED_COUNT = 3
-SIMILARITY_THRESHOLD = 0.65
+SIMILARITY_THRESHOLD = 0.50
 TOP_N_ARTICLES = 50
 
 # Importance scoring weights
@@ -195,6 +195,7 @@ def curate_final_feed():
             best_article = select_best_article(cluster)
             important_clusters.append({
                 "article": best_article,
+                "cluster": cluster,  # added for clickable matched titles
                 "cluster_size": len(cluster),
                 "importance": importance,
                 "titles": [a["title"] for a in cluster]
@@ -223,7 +224,9 @@ def curate_final_feed():
 
     for item in final_articles:
         article = item["article"]
+        cluster = item["cluster"]
         imp = item["importance"]
+
         xml_item = ET.SubElement(channel, "item")
         ET.SubElement(xml_item, "title").text = article["title"]
         ET.SubElement(xml_item, "link").text = article["link"]
@@ -231,17 +234,25 @@ def curate_final_feed():
         source_text = f"{article['source']} (+{item['cluster_size']-1} other sources)" if item['cluster_size'] > 1 else article["source"]
         ET.SubElement(xml_item, "source").text = source_text
 
-        matched_titles = [t for t in item["titles"] if t != article["title"]]
-        if matched_titles:
-            matched_text = "\nMatched titles:\n" + "\n".join(f"- {t}" for t in matched_titles)
+        # clickable matched titles
+        matched_links = [
+            f"- <a href='{a['link']}'>{a['title']}</a>"
+            for a in cluster
+            if a['title'] != article['title']
+        ]
+        if matched_links:
+            matched_text = "<br><br><b>Matched titles:</b><br>" + "<br>".join(matched_links)
         else:
             matched_text = ""
 
-        desc = (
-            f"Importance: {imp['score']:.1f} | Covered by {imp['feed_count']} feeds | Reputation: {imp['avg_reputation']:.1f}"
+        desc_html = (
+            f"<b>Importance:</b> {imp['score']:.1f} | "
+            f"<b>Covered by:</b> {imp['feed_count']} feeds | "
+            f"<b>Reputation:</b> {imp['avg_reputation']:.1f}"
             f"{matched_text}"
         )
-        ET.SubElement(xml_item, "description").text = desc
+        desc_element = ET.SubElement(xml_item, "description")
+        desc_element.text = f"<![CDATA[{desc_html}]]>"
 
     tree = ET.ElementTree(rss)
     ET.indent(tree, space="  ")
