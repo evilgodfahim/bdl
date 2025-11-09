@@ -4,11 +4,12 @@ import json
 import os
 import re
 import sys
+from urllib.parse import urlparse
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-# Set UTF-8 encoding for output
+# Ensure UTF-8 stdout
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
@@ -17,16 +18,13 @@ TEMP_XML_FILE = "temp.xml"
 FINAL_XML_FILE = "final.xml"
 LAST_SEEN_FILE = "last_seen_final.json"
 
-# Thresholds
 MIN_FEED_COUNT = 1
 SIMILARITY_THRESHOLD = 0.65
 TOP_N_ARTICLES = 100
 
-# Importance scoring weights
 WEIGHT_FEED_COUNT = 10.0
 WEIGHT_REPUTATION = 0.5
 
-# Source reputation hierarchy
 REPUTATION = {
     "The Daily Star": 14,
     "Dhaka Tribune": 13,
@@ -51,9 +49,9 @@ except Exception as e:
     print(f"❌ Failed to load model: {e}")
     sys.exit(1)
 
-# ===== UTILITY FUNCTIONS =====
+# ===== UTILITIES =====
 def normalize_title(title):
-    title = re.sub(r'\s+', ' ', title).strip()
+    title = re.sub(r'\s+', ' ', (title or '')).strip()
     title = re.sub(r'[^\w\s\-\']', '', title)
     return title.lower()
 
@@ -61,13 +59,43 @@ def get_reputation_score(source):
     return REPUTATION.get(source, 1)
 
 def parse_xml_date(date_str):
-    try:
-        return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z")
-    except:
+    if not date_str:
+        return datetime.now(timezone.utc)
+    for fmt in ("%a, %d %b %Y %H:%M:%S %Z",
+                "%a, %d %b %Y %H:%M:%S GMT",
+                "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d"):
         try:
-            return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S GMT")
+            return datetime.strptime(date_str, fmt)
         except:
-            return datetime.now(timezone.utc)
+            continue
+    return datetime.now(timezone.utc)
+
+def safe_text(x):
+    try:
+        return (x or "").strip()
+    except:
+        return ""
+
+def link_contains_economy_terms(link):
+    """
+    Robust detection of 'economy' or 'economics' in URL parts.
+    Handles links missing scheme, angle-bracketed links, query fragments, etc.
+    """
+    if not link:
+        return False
+    try:
+        l = link.strip().lower()
+        l = l.strip("<>\"'")
+        parsed = urlparse(l)
+        # If no netloc (e.g., 'example.com/path' without scheme), try adding scheme
+        if not parsed.netloc:
+            parsed = urlparse("http://" + l)
+        combined = " ".join(filter(None, [parsed.netloc, parsed.path, parsed.params, parsed.query, parsed.fragment]))
+        # whole-word match for 'economy' or 'economics'
+        return bool(re.search(r'\b(economy|economics)\b', combined))
+    except:
+        return False
 
 # ===== ARTICLE LOADING =====
 def load_articles_from_temp():
@@ -75,21 +103,24 @@ def load_articles_from_temp():
         print(f"❌ {TEMP_XML_FILE} not found")
         return []
 
-    tree = ET.parse(TEMP_XML_FILE)
+    try:
+        tree = ET.parse(TEMP_XML_FILE)
+    except Exception as e:
+        print(f"❌ XML parse error: {e}")
+        return []
+
     root = tree.getroot()
     articles = []
-
     for item in root.findall(".//item"):
-        title = item.findtext("title", "").strip()
-        link = item.findtext("link", "").strip()
-        pub_date_str = item.findtext("pubDate", "").strip()
-        source = item.findtext("source", "Unknown").strip()
+        title = safe_text(item.findtext("title", ""))
+        link = safe_text(item.findtext("link", ""))
+        pub_date_str = safe_text(item.findtext("pubDate", ""))
+        source = safe_text(item.findtext("source", "Unknown"))
 
         if not title or not link:
             continue
 
         pub_date = parse_xml_date(pub_date_str)
-
         articles.append({
             "title": title,
             "normalized_title": normalize_title(title),
@@ -119,95 +150,83 @@ def cluster_articles(articles):
     print("🔗 Clustering articles...")
     clusters = []
     used = set()
-
     for i, emb_i in enumerate(embeddings):
         if i in used:
             continue
-
         cluster = [articles[i]]
         used.add(i)
-
         for j in range(i + 1, len(embeddings)):
             if j in used:
                 continue
-            similarity = cosine_similarity([emb_i], [embeddings[j]])[0][0]
-            if similarity >= SIMILARITY_THRESHOLD:
+            try:
+                sim = cosine_similarity([emb_i], [embeddings[j]])[0][0]
+            except:
+                sim = 0
+            if sim >= SIMILARITY_THRESHOLD:
                 cluster.append(articles[j])
                 used.add(j)
-
         clusters.append(cluster)
 
     print(f"📊 Created {len(clusters)} clusters from {len(articles)} articles")
     return clusters
 
-# ===== IMPORTANCE SCORING =====
+# ===== IMPORTANCE =====
 def calculate_importance(cluster):
     unique_sources = len(set(a["source"] for a in cluster))
     reputations = [get_reputation_score(a["source"]) for a in cluster]
-    avg_reputation = sum(reputations) / len(reputations) if reputations else 0
-
-    score = (
-        unique_sources * WEIGHT_FEED_COUNT +
-        avg_reputation * WEIGHT_REPUTATION
-    )
-
-    return {
-        "score": score,
-        "feed_count": unique_sources,
-        "avg_reputation": avg_reputation
-    }
+    avg_reputation = sum(reputations) / len(reputations) if reputations else 0.0
+    score = unique_sources * WEIGHT_FEED_COUNT + avg_reputation * WEIGHT_REPUTATION
+    return {"score": score, "feed_count": unique_sources, "avg_reputation": avg_reputation}
 
 def select_best_article(cluster):
-    sorted_cluster = sorted(
-        cluster,
-        key=lambda a: (get_reputation_score(a["source"]), a["pubDate"]),
-        reverse=True
-    )
-    return sorted_cluster[0]
+    return sorted(cluster, key=lambda a: (get_reputation_score(a["source"]), a["pubDate"]), reverse=True)[0]
 
 # ===== DEDUPLICATION =====
 def load_last_seen():
     if os.path.exists(LAST_SEEN_FILE):
-        with open(LAST_SEEN_FILE, "r") as f:
-            data = json.load(f)
-            cutoff = datetime.now(timezone.utc) - timedelta(days=7)
-            return {url: ts for url, ts in data.items() if datetime.fromisoformat(ts) > cutoff}
+        try:
+            with open(LAST_SEEN_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except:
+            return {}
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        out = {}
+        for url, ts in data.items():
+            try:
+                if datetime.fromisoformat(ts) > cutoff:
+                    out[url] = ts
+            except:
+                continue
+        return out
     return {}
 
 def save_last_seen(data):
-    with open(LAST_SEEN_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+    with open(LAST_SEEN_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 # ===== MAIN CURATION =====
 def curate_final_feed():
     articles = load_articles_from_temp()
     if not articles:
-        print("⚠️  No articles to process")
+        print("⚠️ No articles to process")
         return
 
     clusters = cluster_articles(articles)
-    print(f"🔍 Filtering clusters (min {MIN_FEED_COUNT} feeds)...")
+    print(f"🔍 Filtering clusters (min {MIN_FEED_COUNT} feeds or economy/economics links)...")
 
     important_clusters = []
     for cluster in clusters:
         importance = calculate_importance(cluster)
         best_article = select_best_article(cluster)
 
-        # Keep cluster if it meets MIN_FEED_COUNT (now 1)
-        # OR if any link in cluster contains 'economy' or 'economics' (robust check)
         feed_ok = importance["feed_count"] >= MIN_FEED_COUNT
 
-        economy_ok = False
-        for a in cluster:
-            ln = (a.get("link") or "").lower()
-            if "economy" in ln or "economics" in ln:
-                economy_ok = True
-                break
+        economy_ok = any(link_contains_economy_terms(a.get("link", "")) for a in cluster)
 
         if feed_ok or economy_ok:
             important_clusters.append({
                 "article": best_article,
-                "cluster": cluster,  # added for clickable matched titles
+                "cluster": cluster,
                 "cluster_size": len(cluster),
                 "importance": importance,
                 "titles": [a["title"] for a in cluster]
@@ -222,10 +241,10 @@ def curate_final_feed():
     final_articles = []
 
     for item in important_clusters[:TOP_N_ARTICLES]:
-        article = item["article"]
-        if article["link"] not in last_seen:
+        art = item["article"]
+        if art["link"] not in last_seen:
             final_articles.append(item)
-            new_last_seen[article["link"]] = datetime.now(timezone.utc).isoformat()
+            new_last_seen[art["link"]] = datetime.now(timezone.utc).isoformat()
 
     rss = ET.Element("rss", version="2.0")
     channel = ET.SubElement(rss, "channel")
@@ -246,16 +265,12 @@ def curate_final_feed():
         source_text = f"{article['source']} (+{item['cluster_size']-1} other sources)" if item['cluster_size'] > 1 else article["source"]
         ET.SubElement(xml_item, "source").text = source_text
 
-        # clickable matched titles
         matched_links = [
             f"- <a href='{a['link']}'>{a['title']}</a>"
             for a in cluster
             if a['title'] != article['title']
         ]
-        if matched_links:
-            matched_text = "<br><br><b>Matched titles:</b><br>" + "<br>".join(matched_links)
-        else:
-            matched_text = ""
+        matched_text = ("<br><br><b>Matched titles:</b><br>" + "<br>".join(matched_links)) if matched_links else ""
 
         desc_html = (
             f"<b>Importance:</b> {imp['score']:.1f} | "
