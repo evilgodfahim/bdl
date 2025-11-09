@@ -18,7 +18,7 @@ FINAL_XML_FILE = "final.xml"
 LAST_SEEN_FILE = "last_seen_final.json"
 
 # Thresholds
-MIN_FEED_COUNT = 3
+MIN_FEED_COUNT = 1
 SIMILARITY_THRESHOLD = 0.65
 TOP_N_ARTICLES = 100
 
@@ -190,9 +190,21 @@ def curate_final_feed():
 
     important_clusters = []
     for cluster in clusters:
-        if len(set(a["source"] for a in cluster)) >= MIN_FEED_COUNT:
-            importance = calculate_importance(cluster)
-            best_article = select_best_article(cluster)
+        importance = calculate_importance(cluster)
+        best_article = select_best_article(cluster)
+
+        # Keep cluster if it meets MIN_FEED_COUNT (now 1)
+        # OR if any link in cluster contains 'economy' or 'economics' (robust check)
+        feed_ok = importance["feed_count"] >= MIN_FEED_COUNT
+
+        economy_ok = False
+        for a in cluster:
+            ln = (a.get("link") or "").lower()
+            if "economy" in ln or "economics" in ln:
+                economy_ok = True
+                break
+
+        if feed_ok or economy_ok:
             important_clusters.append({
                 "article": best_article,
                 "cluster": cluster,  # added for clickable matched titles
