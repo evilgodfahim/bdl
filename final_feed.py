@@ -18,6 +18,7 @@ TEMP_XML_FILE = "temp.xml"
 FINAL_XML_FILE = "final.xml"
 LAST_SEEN_FILE = "last_seen_final.json"
 
+# Keep singletons; clustering still applied.
 MIN_FEED_COUNT = 1
 SIMILARITY_THRESHOLD = 0.65
 TOP_N_ARTICLES = 100
@@ -78,21 +79,16 @@ def safe_text(x):
         return ""
 
 def link_contains_economy_terms(link):
-    """
-    Robust detection of 'economy' or 'economics' in URL parts.
-    Handles links missing scheme, angle-bracketed links, query fragments, etc.
-    """
+    """Return True if link contains whole-word 'economy' or 'economics' in host/path/query/fragment."""
     if not link:
         return False
     try:
         l = link.strip().lower()
         l = l.strip("<>\"'")
         parsed = urlparse(l)
-        # If no netloc (e.g., 'example.com/path' without scheme), try adding scheme
         if not parsed.netloc:
             parsed = urlparse("http://" + l)
         combined = " ".join(filter(None, [parsed.netloc, parsed.path, parsed.params, parsed.query, parsed.fragment]))
-        # whole-word match for 'economy' or 'economics'
         return bool(re.search(r'\b(economy|economics)\b', combined))
     except:
         return False
@@ -212,27 +208,25 @@ def curate_final_feed():
         return
 
     clusters = cluster_articles(articles)
-    print(f"🔍 Filtering clusters (min {MIN_FEED_COUNT} feeds or economy/economics links)...")
+    print("🔍 Filtering clusters: KEEP only clusters where at least one link contains 'economy' or 'economics'")
 
     important_clusters = []
     for cluster in clusters:
+        # KEEP cluster only if any article link contains the economy terms
+        if not any(link_contains_economy_terms(a.get("link", "")) for a in cluster):
+            continue
+
         importance = calculate_importance(cluster)
         best_article = select_best_article(cluster)
+        important_clusters.append({
+            "article": best_article,
+            "cluster": cluster,
+            "cluster_size": len(cluster),
+            "importance": importance,
+            "titles": [a["title"] for a in cluster]
+        })
 
-        feed_ok = importance["feed_count"] >= MIN_FEED_COUNT
-
-        economy_ok = any(link_contains_economy_terms(a.get("link", "")) for a in cluster)
-
-        if feed_ok or economy_ok:
-            important_clusters.append({
-                "article": best_article,
-                "cluster": cluster,
-                "cluster_size": len(cluster),
-                "importance": importance,
-                "titles": [a["title"] for a in cluster]
-            })
-
-    print(f"✨ Found {len(important_clusters)} important stories")
+    print(f"✨ Found {len(important_clusters)} economy-related stories")
 
     important_clusters.sort(key=lambda x: x["importance"]["score"], reverse=True)
 
@@ -250,7 +244,7 @@ def curate_final_feed():
     channel = ET.SubElement(rss, "channel")
     ET.SubElement(channel, "title").text = "Fahim Final News Feed"
     ET.SubElement(channel, "link").text = "https://evilgodfahim.github.io/"
-    ET.SubElement(channel, "description").text = "Curated important news from multiple sources"
+    ET.SubElement(channel, "description").text = "Curated important news from multiple sources (economy/economics only)"
     ET.SubElement(channel, "lastBuildDate").text = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S GMT")
 
     for item in final_articles:
