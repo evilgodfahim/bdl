@@ -4,7 +4,7 @@ import json
 import os
 import re
 import sys
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
@@ -78,17 +78,19 @@ def safe_text(x):
         return ""
 
 def link_contains_economy_terms(link):
-    """Return True if link contains whole-word 'economy' or 'economics' or 'business' in host/path/query/fragment."""
+    """Return True if link contains whole-word 'economy' or 'economics' or 'business'
+       in host/path/query/fragment (percent-decoded, punctuation-normalized)."""
     if not link:
         return False
     try:
-        l = link.strip().lower()
-        l = l.strip("<>\"'")
+        l = link.strip().lower().strip("<>\"'")
+        l = unquote(l)
         parsed = urlparse(l)
         if not parsed.netloc:
             parsed = urlparse("http://" + l)
         combined = " ".join(filter(None, [parsed.netloc, parsed.path, parsed.params, parsed.query, parsed.fragment]))
-        return bool(re.search(r'\b(economy|economics|business)\b', combined))
+        normalized = re.sub(r'[^a-z0-9_]+', ' ', combined)
+        return bool(re.search(r'\b(economy|economics|business)\b', normalized))
     except:
         return False
 
@@ -207,18 +209,17 @@ def curate_final_feed():
         return
 
     clusters = cluster_articles(articles)
-    print(f"🔍 Filtering clusters (min {MIN_FEED_COUNT} feeds or economy/economics/business links)...")
+    print(f"🔍 Filtering clusters for trusted or economy/business topics...")
 
     important_clusters = []
     for cluster in clusters:
         importance = calculate_importance(cluster)
         best_article = select_best_article(cluster)
 
-        feed_ok = importance["feed_count"] >= MIN_FEED_COUNT
-
+        trusted_ok = any(a.get("source") in REPUTATION for a in cluster)
         economy_ok = any(link_contains_economy_terms(a.get("link", "")) for a in cluster)
 
-        if feed_ok or economy_ok:
+        if trusted_ok or economy_ok:
             important_clusters.append({
                 "article": best_article,
                 "cluster": cluster,
@@ -265,10 +266,7 @@ def curate_final_feed():
             for a in cluster
             if a['title'] != article['title']
         ]
-        if matched_links:
-            matched_text = "<br><br><b>Matched titles:</b><br>" + "<br>".join(matched_links)
-        else:
-            matched_text = ""
+        matched_text = "<br><br><b>Matched titles:</b><br>" + "<br>".join(matched_links) if matched_links else ""
 
         desc_html = (
             f"<b>Importance:</b> {imp['score']:.1f} | "
