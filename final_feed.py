@@ -209,17 +209,17 @@ def curate_final_feed():
         return
 
     clusters = cluster_articles(articles)
-    print(f"🔍 Filtering clusters for trusted or economy/business topics...")
+    print(f"🔍 Filtering clusters for economy/business topics...")
 
     important_clusters = []
     for cluster in clusters:
         importance = calculate_importance(cluster)
         best_article = select_best_article(cluster)
 
-        trusted_ok = any(a.get("source") in REPUTATION for a in cluster)
+        # Only keep if URL contains economy/economics/business keywords
         economy_ok = any(link_contains_economy_terms(a.get("link", "")) for a in cluster)
 
-        if trusted_ok or economy_ok:
+        if economy_ok:
             important_clusters.append({
                 "article": best_article,
                 "cluster": cluster,
@@ -275,7 +275,7 @@ def curate_final_feed():
             f"{matched_text}"
         )
         desc_element = ET.SubElement(xml_item, "description")
-        desc_element.text = f"<![CDATA[{desc_html}]]>"
+        desc_element.text = desc_html
 
     tree = ET.ElementTree(rss)
     ET.indent(tree, space="  ")
