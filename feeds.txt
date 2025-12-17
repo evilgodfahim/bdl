@@ -28,3 +28,4 @@ https://politepol.com/fd/p5BVufmsBqUz.xml
 https://politepol.com/fd/kou0r2KPN9at.xml
 https://politepol.com/fd/6zKiQKWFbWFd.xml
 https://evilgodfahim.github.io/ds/business.xml
+https://evilgodfahim.github.io/ds/todays_news.xml
