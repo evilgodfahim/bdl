@@ -1,5 +1,6 @@
 http://www.thedailystar.net/latest/rss/rss.xml
 https://evilgodfahim.github.io/ds/todays-news.xml
+https://evilgodfahim.github.io/ep/articles.xml
 https://en.prothomalo.com/feed/
 https://politepaul.com/fd/Pn9wugG4g42C.xml
 https://politepaul.com/fd/21OlmKwnfsTw.xml
