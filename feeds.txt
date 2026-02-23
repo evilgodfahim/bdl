@@ -4,6 +4,7 @@ https://evilgodfahim.github.io/dstar/feeds/feed.xml
 https://politepaul.com/fd/BNnVF6SFDNH6.xml
 https://evilgodfahim.github.io/ds/printversion.xml
 https://evilgodfahim.github.io/ep/articles.xml
+https://evilgodfahim.github.io/tbs/articles.xml
 https://en.prothomalo.com/feed/
 https://politepaul.com/fd/Pn9wugG4g42C.xml
 https://politepaul.com/fd/21OlmKwnfsTw.xml
