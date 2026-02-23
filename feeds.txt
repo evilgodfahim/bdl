@@ -1,5 +1,6 @@
 https://politepaul.com/fd/XeBbNkFKkjmd.xml
 https://evilgodfahim.github.io/ds/todays-news.xml
+https://evilgodfahim.github.io/dstar/feeds/feed.xml
 https://politepaul.com/fd/BNnVF6SFDNH6.xml
 https://evilgodfahim.github.io/ds/printversion.xml
 https://evilgodfahim.github.io/ep/articles.xml
