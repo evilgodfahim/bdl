@@ -2,7 +2,7 @@ name: Daily Curation (Stage 2)
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Runs daily at 08:00 AM Bangladesh time
+    - cron: '30 1 * * *'  # Runs daily at 08:00 AM Bangladesh time
   workflow_dispatch:
 
 jobs:
