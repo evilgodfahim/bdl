@@ -1,6 +1,5 @@
 https://politepaul.com/fd/XeBbNkFKkjmd.xml
 https://evilgodfahim.github.io/ds/todays_news.xml
-https://evilgodfahim.github.io/tm/feeds/feed.xml
 https://politepaul.com/fd/yeNoVuPeGNWs.xml
 https://evilgodfahim.github.io/fen/feeds/feed.xml
 https://evilgodfahim.github.io/dt/home.xml
@@ -41,12 +40,5 @@ https://evilgodfahim.github.io/ds/business.xml
 https://politepaul.com/fd/BaUjoEn6s1Rx.xml
 https://politepaul.com/fd/cjcFELwr80sj.xml
 https://evilgodfahim.github.io/ds/printversion.xml
-https://evilgodfahim.github.io/sci/daily_feed.xml
-https://evilgodfahim.github.io/int/final.xml
-https://evilgodfahim.github.io/fp/final.xml
 https://evilgodfahim.github.io/ep/articles.xml
 https://evilgodfahim.github.io/bl/result.xml
-https://evilgodfahim.github.io/Latest/result.xml
-https://evilgodfahim.github.io/cr/merged.xml
-https://evilgodfahim.github.io/wl/pau.xml
-
