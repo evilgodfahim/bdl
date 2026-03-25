@@ -18,7 +18,7 @@ TEMP_XML_FILE = "temp.xml"
 FINAL_XML_FILE = "final.xml"
 LAST_SEEN_FILE = "last_seen_final.json"
 
-MIN_FEED_COUNT = 1
+MIN_FEED_COUNT = 2
 SIMILARITY_THRESHOLD = 0.65
 TOP_N_ARTICLES = 100
 
