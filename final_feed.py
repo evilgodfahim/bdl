@@ -17,6 +17,7 @@ if sys.stdout.encoding != 'utf-8':
 TEMP_XML_FILE = "temp.xml"
 FINAL_XML_FILE = "final.xml"
 LAST_SEEN_FILE = "last_seen_final.json"
+SOURCES_FILE = "sources.txt"
 
 MIN_FEED_COUNT = 1
 SIMILARITY_THRESHOLD = 0.65
@@ -207,6 +208,19 @@ def curate_final_feed():
     if not articles:
         print("⚠️ No articles to process")
         return
+
+    def _src_from_link(link):
+        try:
+            host = urlparse(link).netloc.lower().replace("www.", "")
+            return host.split(".")[0]
+        except:
+            return ""
+
+    sources = sorted(set(filter(None, (_src_from_link(a["link"]) for a in articles if a.get("link")))))
+    with open(SOURCES_FILE, "w", encoding="utf-8") as f:
+        for src in sources:
+            f.write(src + "\n")
+    print(f"✓ sources.txt written with {len(sources)} unique sources")
 
     clusters = cluster_articles(articles)
     print(f"🔍 Filtering clusters for economy/business topics...")
