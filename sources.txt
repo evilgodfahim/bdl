@@ -12,7 +12,6 @@ newagebd
 newstatesman
 newyorker
 scour
-spectator
 tbsnews
 theatlantic
 thedailystar
@@ -24,4 +23,3 @@ time
 tob
 today
 unb
-wired
