@@ -1,5 +1,4 @@
 archive
-bangla
 bangladeshpost
 bdnews24
 bssnews
@@ -9,15 +8,13 @@ dailynewnation
 dhakatribune
 en
 newagebd
-newstatesman
 newyorker
-scour
+spectator
 tbsnews
 theatlantic
 thedailystar
 thefinancialexpress
 theguardian
-thenation
 theweek
 time
 tob
