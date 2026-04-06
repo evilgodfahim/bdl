@@ -8,15 +8,14 @@ dailynewnation
 dhakatribune
 en
 newagebd
-newyorker
 spectator
 tbsnews
 theatlantic
 thedailystar
 thefinancialexpress
 theguardian
-theweek
 time
 tob
 today
 unb
+wired
