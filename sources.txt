@@ -1,6 +1,5 @@
 al-monitor
 aljazeera
-apnews
 archive
 asiatimes
 bangladeshpost
@@ -10,18 +9,15 @@ businessinsider
 daily-sun
 dailynewnation
 dhakatribune
-dw
 economictimes
 en
-english
+france24
 hindustantimes
-jpost
 middleeasteye
 newagebd
 newyorker
-nytimes
-rt
 scmp
+southfront
 spectator
 straitstimes
 tass
@@ -31,9 +27,7 @@ thefinancialexpress
 theguardian
 thehill
 thehindu
-theweek
 time
-timesofindia
 tob
 today
 unb
