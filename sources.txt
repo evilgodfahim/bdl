@@ -3,11 +3,8 @@ bdnews24
 businessinsider
 daily-sun
 dhakatribune
-dscdn
+dw
 en
-hindustantimes
-moderndiplomacy
-murray
 newagebd
 tbsnews
 thedailystar
