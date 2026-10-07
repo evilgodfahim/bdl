@@ -1,14 +1,11 @@
 aljazeera
 archive
-bbc
 bdnews24
 businessinsider
 daily-sun
 dhakatribune
-dscdn
 economictimes
 en
-entrepreneur
 fastcompany
 forbes
 foreignpolicy
@@ -17,10 +14,9 @@ meduza
 nakedcapitalism
 newagebd
 news
-scmp
 southfront
+spectator
 straitstimes
-tass
 tbsnews
 thedailystar
 thefinancialexpress
